@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 	"github.com/tencentyun/cos-go-sdk-v5"
@@ -21,6 +25,7 @@ func main() {
 	// 明文存id与key无异于自杀行为
 	// 请做好跑路准备
 	u, _ := url.Parse(os.Getenv("Sync_Url"))
+	w := os.Getenv("Sync_WebhookUrl")
 	b := &cos.BaseURL{BucketURL: u}
 	c := cos.NewClient(b, &http.Client{
 		Transport: &cos.AuthorizationTransport{
@@ -50,6 +55,7 @@ func main() {
 	// 拿出来了就读吧
 	// 0 就是读所有文件文件夹
 	list, _ := file.Readdirnames(0)
+	count := 0
 	for _, name := range list {
 		_, err := c.Object.Head(context.Background(), name, nil)
 		if err != nil {
@@ -59,9 +65,30 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
+			count++
 			log.Print("已上传.")
 		} else {
 			log.Print("数据存在，跳过...")
 		}
 	}
+	// webhook
+	postBody, _ := json.Marshal(map[string]string{
+		"msgtype": "text",
+		"text":    `{"content": "同步完成, 本次共计同步` + strconv.Itoa(count) + `条数据."}`,
+	})
+	responseBody := bytes.NewBuffer(postBody)
+	//Leverage Go's HTTP Post function to make request
+	resp, err := http.Post(w, "application/json", responseBody)
+	//Handle Error
+	if err != nil {
+		log.Fatalf("webhook错误 %v", err)
+	}
+	defer resp.Body.Close()
+	//Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	sb := string(body)
+	log.Printf(sb)
 }

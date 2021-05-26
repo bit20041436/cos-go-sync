@@ -1,0 +1,1 @@
+# cos-go-sync

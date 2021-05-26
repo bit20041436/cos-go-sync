@@ -11,17 +11,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/joho/godotenv"
 	"github.com/tencentyun/cos-go-sdk-v5"
 )
 
 func main() {
-	//环境变量
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal(".env文件加载错误！")
-	}
-	// 先预定义好COS相关东西
+	// 预定义COS相关配置
 	// 明文存id与key无异于自杀行为
 	// 请做好跑路准备
 	u, _ := url.Parse(os.Getenv("Sync_Url"))
@@ -42,8 +36,8 @@ func main() {
 			XCosACL: "private",
 		},
 	}
-	// 然后读本地文件
-	file, err := os.Open("./data")
+	// 读本地文件
+	file, err := os.Open("/data")
 	// 任何时候都得做好出错准备
 	// 出错就得擦屁股
 	if err != nil {
@@ -60,13 +54,12 @@ func main() {
 		_, err := c.Object.Head(context.Background(), name, nil)
 		if err != nil {
 			log.Print("数据不存在，开始上传...")
-			log.Print(name)
-			_, err = c.Object.PutFromFile(context.Background(), name, "./data/"+name, opt)
+			_, err = c.Object.PutFromFile(context.Background(), name, "/data/"+name, opt)
 			if err != nil {
 				panic(err)
 			}
 			count++
-			log.Print("已上传.")
+			log.Printf("已上传: %s", name)
 		} else {
 			log.Print("数据存在，跳过...")
 		}

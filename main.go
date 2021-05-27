@@ -11,10 +11,15 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/joho/godotenv"
 	"github.com/tencentyun/cos-go-sdk-v5"
 )
 
 func main() {
+	err := godotenv.Load(".env.local")
+	if err != nil {
+		log.Print("调用env文件失败，使用环境变量..")
+	}
 	// 预定义COS相关配置
 	// 明文存id与key无异于自杀行为
 	// 请做好跑路准备
@@ -37,7 +42,7 @@ func main() {
 		},
 	}
 	// 读本地文件
-	file, err := os.Open("/data")
+	file, err := os.Open("/data/")
 	// 任何时候都得做好出错准备
 	// 出错就得擦屁股
 	if err != nil {
@@ -70,14 +75,14 @@ func main() {
 		"text":    `{"content": "同步完成, 本次共计同步` + strconv.Itoa(count) + `条数据."}`,
 	})
 	responseBody := bytes.NewBuffer(postBody)
-	//Leverage Go's HTTP Post function to make request
+	// 发送post请求
 	resp, err := http.Post(w, "application/json", responseBody)
-	//Handle Error
+	// 错误处理
 	if err != nil {
 		log.Fatalf("webhook错误 %v", err)
 	}
 	defer resp.Body.Close()
-	//Read the response body
+	// 打印返回
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalln(err)

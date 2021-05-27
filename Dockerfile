@@ -6,7 +6,7 @@ RUN go env -w GOPROXY=https://goproxy.cn,direct
 COPY main.go go* /src/
 RUN CGO_ENABLED=0 go build -o /bin/sync
 
-FROM scratch
+FROM alpine
 ADD ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /bin/sync /bin/sync
 ENTRYPOINT ["/bin/sync"]
